@@ -1,16 +1,28 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { RetroHeader } from "./components/RetroHeader";
 import { GoLiveButton } from "./components/GoLiveButton";
 import { RoomStatus } from "./components/RoomStatus";
 import { WebcamVideo } from "./components/WebcamVideo";
+import { RoomInput } from "./components/RoomInput";
+import { PeerStreams } from "./components/PeerStreams";
 import { DebugPanel } from "./components/DebugPanel";
+import { useWebRTC } from "./hooks/useWebRTC";
 import "./index.css";
+
+interface PeerStream {
+  peerId: string;
+  stream: MediaStream;
+}
 
 export function App() {
   const [isLive, setIsLive] = useState(false);
   const [webcamStream, setWebcamStream] = useState<MediaStream | null>(null);
-  const [roomId, setRoomId] = useState<string>();
+  const [roomName, setRoomName] = useState<string>("");
+  const [currentRoom, setCurrentRoom] = useState<string>();
   const [isLoading, setIsLoading] = useState(false);
+  const [peerStreams, setPeerStreams] = useState<PeerStream[]>([]);
+
+  const webrtc = useWebRTC();
 
   const handleGoLive = async () => {
     if (isLive) {
@@ -19,8 +31,10 @@ export function App() {
         webcamStream.getTracks().forEach(track => track.stop());
         setWebcamStream(null);
       }
+      webrtc.leaveRoom();
       setIsLive(false);
-      setRoomId(undefined);
+      setCurrentRoom(undefined);
+      setPeerStreams([]);
     } else {
       // Start streaming
       setIsLoading(true);
@@ -31,8 +45,11 @@ export function App() {
         });
         setWebcamStream(stream);
         setIsLive(true);
-        // Generate a simple room ID for now
-        setRoomId(`room-${Date.now()}`);
+        
+        // If we're in a room, share the stream
+        if (currentRoom && webrtc.room) {
+          webrtc.shareStream(stream);
+        }
       } catch (error) {
         console.error('Error accessing webcam:', error);
         alert('Could not access webcam. Please check permissions.');
@@ -42,27 +59,72 @@ export function App() {
     }
   };
 
+  const handleJoinRoom = () => {
+    if (roomName.trim()) {
+      const room = webrtc.joinRoom(roomName.trim());
+      if (room) {
+        setCurrentRoom(roomName.trim());
+        
+        // Share stream if we're already live
+        if (webcamStream) {
+          webrtc.shareStream(webcamStream);
+        }
+      }
+    }
+  };
+
+  // Set up peer stream handling
+  useEffect(() => {
+    webrtc.onPeerStream((stream, peerId) => {
+      console.log('Received stream from peer:', peerId);
+      setPeerStreams(prev => {
+        // Remove existing stream from this peer if any
+        const filtered = prev.filter(ps => ps.peerId !== peerId);
+        return [...filtered, { peerId, stream }];
+      });
+    });
+  }, [webrtc.room]);
+
+  // Clean up peer streams when peers leave
+  useEffect(() => {
+    setPeerStreams(prev => 
+      prev.filter(ps => webrtc.peers.includes(ps.peerId))
+    );
+  }, [webrtc.peers]);
+
   // Debug data for development
   const debugData = {
-    availableRooms: roomId ? [roomId] : [],
+    availableRooms: currentRoom ? [currentRoom] : [],
     originalEventId: isLive ? `event-${Date.now()}` : undefined,
     availableRestreams: [],
     webrtcState: {
-      connected: false,
-      peers: 0
+      connected: webrtc.isConnected,
+      peers: webrtc.peers.length,
+      currentRoom,
+      error: webrtc.error
     },
     nostrRelayStatus: {
       connected: false,
       relays: []
     },
-    peerConnections: []
+    peerConnections: webrtc.peers.map(peerId => ({ peerId, status: 'connected' }))
   };
 
   return (
     <div className="container">
       <RetroHeader />
       
-      <RoomStatus roomId={roomId} status={isLive ? "LIVE" : "OFFLINE"} />
+      <RoomInput 
+        roomName={roomName}
+        onRoomNameChange={setRoomName}
+        onJoinRoom={handleJoinRoom}
+        disabled={isLoading}
+      />
+      
+      <RoomStatus 
+        roomId={currentRoom} 
+        status={`${isLive ? "LIVE" : "OFFLINE"} ${webrtc.peers.length > 0 ? `(${webrtc.peers.length} peers)` : ""}`} 
+      />
       
       <GoLiveButton 
         onClick={handleGoLive} 
@@ -71,6 +133,8 @@ export function App() {
       />
       
       <WebcamVideo stream={webcamStream} />
+      
+      <PeerStreams peerStreams={peerStreams} />
       
       <DebugPanel data={debugData} />
     </div>

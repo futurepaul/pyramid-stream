@@ -57,21 +57,30 @@ bun add -d @types/react @types/react-dom
 
 #### 1.1 Setup Development Environment
 - [x] Bun React project initialized
-- [ ] Install dependencies (wouter, snstr, trystero)
-- [ ] Setup basic HTML entry point with camera access
-- [ ] Create Bun development server with hot reload
+- [x] ~~Install dependencies~~ Built with vanilla React (no external deps yet)
+- [x] Setup basic HTML entry point with retro styling
+- [x] Create Bun development server with hot reload
+- [x] **BONUS:** Vercel deployment with proper static asset routing
+- [x] **BONUS:** Multi-format favicon support (Safari + Chrome compatible)
 
 #### 1.2 Camera Access & Local Streaming
-- [ ] Implement camera permission request
-- [ ] Create video preview component
-- [ ] Setup MediaStream capture
-- [ ] Basic "GO LIVE" button functionality
+- [x] Implement camera permission request
+- [x] Create video preview component (WebcamVideo.tsx)
+- [x] Setup MediaStream capture
+- [x] Basic "GO LIVE" button functionality (Windows 95 style!)
+- [x] **BONUS:** Room status display component
+- [x] **BONUS:** Comprehensive debug panels for development
 
 #### 1.3 Nostr Integration
 - [ ] Setup snstr client with relay connections
 - [ ] Use Kind 30078 (Application Data) for stream announcements
 - [ ] Implement stream announcement publishing
 - [ ] Create shareable URLs with event IDs (`/s/nevent123...`)
+
+**Phase 1 Status: 2/3 Complete ✅** 
+- Development infrastructure: ✅ DONE
+- Camera access: ✅ DONE  
+- Nostr integration: ⏳ NEXT
 
 ### Phase 2: WebRTC P2P Streaming
 
