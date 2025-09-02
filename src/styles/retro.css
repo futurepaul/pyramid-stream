@@ -1,0 +1,122 @@
+/* Windows 95 / Retro styling */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Times New Roman', Times, serif;
+  background: #c0c0c0;
+  color: #000;
+}
+
+.pyramid-title {
+  font-size: 4rem;
+  font-weight: bold;
+  font-family: 'Times New Roman', Times, serif;
+  text-align: center;
+  margin: 2rem 0;
+  color: #000;
+  text-shadow: 2px 2px 0px #808080;
+}
+
+.go-live-button {
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 1.5rem;
+  font-weight: bold;
+  padding: 12px 24px;
+  background: #c0c0c0;
+  border: 2px outset #c0c0c0;
+  color: #000;
+  cursor: pointer;
+  margin: 1rem;
+  display: block;
+  margin: 2rem auto;
+  min-width: 200px;
+}
+
+.go-live-button:hover {
+  background: #d4d0c8;
+}
+
+.go-live-button:active {
+  border: 2px inset #c0c0c0;
+  background: #a0a0a0;
+}
+
+.go-live-button:disabled {
+  color: #808080;
+  cursor: not-allowed;
+  border: 2px outset #c0c0c0;
+  background: #c0c0c0;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.room-status {
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 1.2rem;
+  margin: 1rem 0;
+  padding: 0.5rem;
+  background: #fff;
+  border: 2px inset #c0c0c0;
+}
+
+.video-container {
+  margin: 2rem 0;
+  display: flex;
+  justify-content: center;
+}
+
+.webcam-video {
+  width: 100%;
+  max-width: 640px;
+  height: auto;
+  border: 2px inset #c0c0c0;
+  background: #000;
+}
+
+.debug-section {
+  margin: 2rem 0;
+  text-align: left;
+}
+
+.debug-details {
+  font-family: 'Times New Roman', Times, serif;
+  background: #fff;
+  border: 2px inset #c0c0c0;
+  margin: 0.5rem 0;
+}
+
+.debug-details summary {
+  padding: 0.5rem;
+  font-weight: bold;
+  cursor: pointer;
+  background: #c0c0c0;
+  border-bottom: 1px solid #808080;
+}
+
+.debug-details pre {
+  padding: 0.5rem;
+  margin: 0;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+@media (max-width: 768px) {
+  .pyramid-title {
+    font-size: 2.5rem;
+  }
+  
+  .container {
+    padding: 1rem;
+  }
+}

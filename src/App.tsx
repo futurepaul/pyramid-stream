@@ -1,37 +1,78 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { APITester } from "./APITester";
+import { useState } from "react";
+import { RetroHeader } from "./components/RetroHeader";
+import { GoLiveButton } from "./components/GoLiveButton";
+import { RoomStatus } from "./components/RoomStatus";
+import { WebcamVideo } from "./components/WebcamVideo";
+import { DebugPanel } from "./components/DebugPanel";
 import "./index.css";
 
-import logo from "./logo.svg";
-import reactLogo from "./react.svg";
-
 export function App() {
-  return (
-    <div className="container mx-auto p-8 text-center relative z-10">
-      <div className="flex justify-center items-center gap-8 mb-8">
-        <img
-          src={logo}
-          alt="Bun Logo"
-          className="h-36 p-6 transition-all duration-300 hover:drop-shadow-[0_0_2em_#646cffaa] scale-120"
-        />
-        <img
-          src={reactLogo}
-          alt="React Logo"
-          className="h-36 p-6 transition-all duration-300 hover:drop-shadow-[0_0_2em_#61dafbaa] [animation:spin_20s_linear_infinite]"
-        />
-      </div>
+  const [isLive, setIsLive] = useState(false);
+  const [webcamStream, setWebcamStream] = useState<MediaStream | null>(null);
+  const [roomId, setRoomId] = useState<string>();
+  const [isLoading, setIsLoading] = useState(false);
 
-      <Card className="bg-card/50 backdrop-blur-sm border-muted">
-        <CardContent className="pt-6">
-          <h1 className="text-5xl font-bold my-4 leading-tight">Bun + React</h1>
-          <p>
-            Edit{" "}
-            <code className="relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-sm">src/App.tsx</code> and
-            save to test HMR
-          </p>
-          <APITester />
-        </CardContent>
-      </Card>
+  const handleGoLive = async () => {
+    if (isLive) {
+      // Stop streaming
+      if (webcamStream) {
+        webcamStream.getTracks().forEach(track => track.stop());
+        setWebcamStream(null);
+      }
+      setIsLive(false);
+      setRoomId(undefined);
+    } else {
+      // Start streaming
+      setIsLoading(true);
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: true, 
+          audio: true 
+        });
+        setWebcamStream(stream);
+        setIsLive(true);
+        // Generate a simple room ID for now
+        setRoomId(`room-${Date.now()}`);
+      } catch (error) {
+        console.error('Error accessing webcam:', error);
+        alert('Could not access webcam. Please check permissions.');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
+  // Debug data for development
+  const debugData = {
+    availableRooms: roomId ? [roomId] : [],
+    originalEventId: isLive ? `event-${Date.now()}` : undefined,
+    availableRestreams: [],
+    webrtcState: {
+      connected: false,
+      peers: 0
+    },
+    nostrRelayStatus: {
+      connected: false,
+      relays: []
+    },
+    peerConnections: []
+  };
+
+  return (
+    <div className="container">
+      <RetroHeader />
+      
+      <RoomStatus roomId={roomId} status={isLive ? "LIVE" : "OFFLINE"} />
+      
+      <GoLiveButton 
+        onClick={handleGoLive} 
+        isLive={isLive}
+        disabled={isLoading}
+      />
+      
+      <WebcamVideo stream={webcamStream} />
+      
+      <DebugPanel data={debugData} />
     </div>
   );
 }
