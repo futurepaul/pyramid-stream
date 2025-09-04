@@ -48,7 +48,10 @@ export function App() {
         
         // If we're in a room, share the stream
         if (currentRoom && webrtc.room) {
+          console.log('📺 Going live in room:', currentRoom);
           webrtc.shareStream(stream);
+        } else {
+          console.log('📺 Going live but not in a room yet');
         }
       } catch (error) {
         console.error('Error accessing webcam:', error);
@@ -61,13 +64,18 @@ export function App() {
 
   const handleJoinRoom = () => {
     if (roomName.trim()) {
+      console.log('🏠 Joining room:', roomName.trim());
       const room = webrtc.joinRoom(roomName.trim());
       if (room) {
         setCurrentRoom(roomName.trim());
+        console.log('🏠 Room joined successfully:', roomName.trim());
         
         // Share stream if we're already live
         if (webcamStream) {
+          console.log('📺 Already live, sharing existing stream');
           webrtc.shareStream(webcamStream);
+        } else {
+          console.log('📺 Not live yet, stream will be shared when going live');
         }
       }
     }
@@ -75,12 +83,16 @@ export function App() {
 
   // Set up peer stream handling
   useEffect(() => {
+    console.log('🔧 Setting up peer stream handling, room:', !!webrtc.room);
     webrtc.onPeerStream((stream, peerId) => {
-      console.log('Received stream from peer:', peerId);
+      console.log('🎥 App received stream from peer:', peerId);
       setPeerStreams(prev => {
+        console.log('📊 Current peer streams:', prev.length);
         // Remove existing stream from this peer if any
         const filtered = prev.filter(ps => ps.peerId !== peerId);
-        return [...filtered, { peerId, stream }];
+        const newStreams = [...filtered, { peerId, stream }];
+        console.log('📊 Updated peer streams:', newStreams.length);
+        return newStreams;
       });
     });
   }, [webrtc.room]);
@@ -92,22 +104,19 @@ export function App() {
     );
   }, [webrtc.peers]);
 
-  // Debug data for development
+  // Debug data from real Trystero state
   const debugData = {
     availableRooms: currentRoom ? [currentRoom] : [],
     originalEventId: isLive ? `event-${Date.now()}` : undefined,
     availableRestreams: [],
-    webrtcState: {
-      connected: webrtc.isConnected,
-      peers: webrtc.peers.length,
-      currentRoom,
-      error: webrtc.error
-    },
+    webrtcState: webrtc.getDebugInfo(),
     nostrRelayStatus: {
-      connected: false,
-      relays: []
+      connected: webrtc.isConnected,
+      relays: webrtc.room ? ['ws://localhost:10547'] : [],
+      roomExists: !!webrtc.room,
+      roomError: webrtc.error
     },
-    peerConnections: webrtc.peers.map(peerId => ({ peerId, status: 'connected' }))
+    peerConnections: webrtc.peers.map(peerId => ({ peerId, status: 'connected', fullId: peerId }))
   };
 
   return (

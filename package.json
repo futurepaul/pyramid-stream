@@ -16,12 +16,14 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.525.0",
+    "node-datachannel": "^0.29.0",
+    "nostr-tools": "^2.16.2",
     "react": "^19",
     "react-dom": "^19",
     "tailwind-merge": "^3.3.1",
     "tailwindcss": "^4.1.11",
     "tailwindcss-animate": "^1.0.7",
-    "trystero": "^0.21.7"
+    "trystero": "./trystero-local"
   },
   "devDependencies": {
     "@types/react": "^19",
