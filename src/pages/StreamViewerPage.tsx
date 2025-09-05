@@ -20,6 +20,7 @@ export function StreamViewerPage() {
   const [streamHierarchy, setStreamHierarchy] = useState<any[]>([]);
   const [peerStreams, setPeerStreams] = useState<PeerStream[]>([]);
   const [rebroadcastEventId, setRebroadcastEventId] = useState<string>();
+  const [actualRoomName, setActualRoomName] = useState<string>();
 
   const nostr = useNostr();
   const webrtc = useWebRTC();
@@ -52,6 +53,7 @@ export function StreamViewerPage() {
       // Use event ID as Trystero room name!
       console.log('🏠 Joining Trystero room with event ID:', eventId);
       webrtc.joinRoom(eventId);
+      setActualRoomName(eventId); // Track the ACTUAL room name used
       
     } catch (error) {
       console.error('❌ Failed to load stream:', error);
@@ -124,17 +126,24 @@ export function StreamViewerPage() {
     }
   };
 
-  // Debug data
+  // Debug data (match working version structure) - use ACTUAL room name  
   const debugData = {
+    availableRooms: actualRoomName ? [actualRoomName] : [], // Use actual Trystero room name
+    originalEventId: streamEvent?.id,
+    availableRestreams: rebroadcastEventId ? [rebroadcastEventId] : [],
+    webrtcState: webrtc.getDebugInfo(),
+    nostrRelayStatus: {
+      connected: webrtc.isConnected,
+      relays: webrtc.room ? ['ws://localhost:10547'] : [],
+      roomExists: !!webrtc.room,
+      roomError: webrtc.error
+    },
+    peerConnections: webrtc.peers.map(peerId => ({ peerId, status: 'viewer', fullId: peerId })),
+    // Additional stream viewer data
     currentEvent: streamEvent,
     streamHierarchy: streamHierarchy,
-    rebroadcastEvent: rebroadcastEventId,
     streamDepth: streamHierarchy.length,
-    originalEvent: streamHierarchy[0]?.id,
-    nostrState: nostr.getDebugInfo(),
-    webrtcState: webrtc.getDebugInfo(),
-    peerStreams: peerStreams.length,
-    availableStreams: peerStreams.map(ps => ps.peerId)
+    peerStreams: peerStreams.length
   };
 
   // Show nsec input if not connected

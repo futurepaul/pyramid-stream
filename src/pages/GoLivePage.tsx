@@ -14,6 +14,7 @@ export function GoLivePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [streamEventId, setStreamEventId] = useState<string>();
   const [streamUrl, setStreamUrl] = useState<string>();
+  const [actualRoomName, setActualRoomName] = useState<string>();
 
   const nostr = useNostr();
   const webrtc = useWebRTC();
@@ -66,6 +67,7 @@ export function GoLivePage() {
         }
         
         setStreamEventId(eventId);
+        setActualRoomName(eventId); // Track the ACTUAL room name used
         
         // Generate shareable URL with the real event ID
         const url = `${window.location.origin}/stream/${eventId}`;
@@ -84,16 +86,26 @@ export function GoLivePage() {
     }
   };
 
-  // Debug data
+  // Debug data (match working version structure) - use ACTUAL room name
   const debugData = {
+    availableRooms: actualRoomName ? [actualRoomName] : [], // Use actual Trystero room name
+    originalEventId: streamEventId,
+    availableRestreams: [],
+    webrtcState: webrtc.getDebugInfo(),
+    nostrRelayStatus: {
+      connected: webrtc.isConnected,
+      relays: webrtc.room ? ['ws://localhost:10547'] : [],
+      roomExists: !!webrtc.room,
+      roomError: webrtc.error
+    },
+    peerConnections: webrtc.peers.map(peerId => ({ peerId, status: 'streamer', fullId: peerId })),
+    // Additional go live data
     streamEvent: streamEventId ? {
       eventId: streamEventId,
       shareableUrl: streamUrl,
       trysteroRoom: streamEventId
     } : null,
-    nostrState: nostr.getDebugInfo(),
-    webrtcState: webrtc.getDebugInfo(),
-    currentRoom: streamEventId
+    nostrState: nostr.getDebugInfo()
   };
 
   // Show nsec input if not connected
