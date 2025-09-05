@@ -142,7 +142,25 @@ export function useNostr() {
     
     console.log('✅ Signed event with ID:', signedEvent.id);
     
-    // 3. Return the signed event (we have the real ID now!)
+    // 3. Publish the signed event using the client
+    console.log('📡 Attempting to publish signed event...');
+    console.log('🔍 Available client methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(clientRef.current)));
+    
+    // Try the most likely publish methods
+    if (clientRef.current.publishEvent) {
+      console.log('📡 Using client.publishEvent()');
+      const publishResponse = await clientRef.current.publishEvent(signedEvent);
+      console.log('✅ Published via publishEvent:', publishResponse);
+    } else if (clientRef.current.publish) {
+      console.log('📡 Using client.publish()'); 
+      const publishResponse = await clientRef.current.publish(signedEvent);
+      console.log('✅ Published via publish:', publishResponse);
+    } else {
+      console.error('❌ No publish method found on client');
+      console.log('🔍 Available methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(clientRef.current)));
+      throw new Error('No publish method available on client');
+    }
+    
     return signedEvent as StreamEvent;
   };
 
