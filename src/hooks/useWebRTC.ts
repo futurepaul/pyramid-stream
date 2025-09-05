@@ -6,6 +6,9 @@ interface WebRTCState {
   peers: string[];
   isConnected: boolean;
   error: string | null;
+  rebroadcastRoom: Room | null;
+  rebroadcastPeers: string[];
+  isRebroadcasting: boolean;
 }
 
 export function useWebRTC(roomName?: string) {
@@ -13,10 +16,15 @@ export function useWebRTC(roomName?: string) {
     room: null,
     peers: [],
     isConnected: false,
-    error: null
+    error: null,
+    rebroadcastRoom: null,
+    rebroadcastPeers: [],
+    isRebroadcasting: false
   });
 
   const roomRef = useRef<Room | null>(null);
+  const rebroadcastRoomRef = useRef<Room | null>(null);
+  const incomingStreamsRef = useRef<Map<string, MediaStream>>(new Map());
 
   const joinWebRTCRoom = (name: string) => {
     try {
@@ -115,11 +123,21 @@ export function useWebRTC(roomName?: string) {
       roomRef.current.leave();
       roomRef.current = null;
     }
+    
+    // Also stop any rebroadcast
+    stopRebroadcast();
+    
+    // Clear incoming streams
+    incomingStreamsRef.current.clear();
+    
     setState({
       room: null,
       peers: [],
       isConnected: false,
-      error: null
+      error: null,
+      rebroadcastRoom: null,
+      rebroadcastPeers: [],
+      isRebroadcasting: false
     });
   };
 
@@ -141,9 +159,83 @@ export function useWebRTC(roomName?: string) {
       roomRef.current.onPeerStream((stream, peerId) => {
         console.log('🎥 Received stream from peer:', peerId);
         console.log('🎥 Stream tracks:', stream.getTracks().map(t => `${t.kind}: ${t.enabled}`));
+        
+        // Store incoming stream for potential rebroadcast
+        incomingStreamsRef.current.set(peerId, stream);
+        
         callback(stream, peerId);
       });
     }
+  };
+
+  const startRebroadcast = () => {
+    try {
+      if (incomingStreamsRef.current.size === 0) {
+        console.log('⚠️ No incoming streams to rebroadcast');
+        return null;
+      }
+
+      // Create a new room for rebroadcasting with a unique name
+      const rebroadcastRoomName = `restream-${Date.now()}`;
+      console.log('📡 Starting rebroadcast in room:', rebroadcastRoomName);
+
+      const config = { 
+        appId: 'pyramid_stream',
+        relayUrls: ['ws://localhost:10547']
+      };
+
+      const rebroadcastRoom = joinRoom(config, rebroadcastRoomName);
+      rebroadcastRoomRef.current = rebroadcastRoom;
+
+      // Handle rebroadcast peers
+      rebroadcastRoom.onPeerJoin(peerId => {
+        console.log('🔄 Rebroadcast peer joined:', peerId);
+        setState(prev => ({
+          ...prev,
+          rebroadcastPeers: [...prev.rebroadcastPeers, peerId]
+        }));
+
+        // Share all incoming streams with new rebroadcast peer
+        incomingStreamsRef.current.forEach((stream, originalPeerId) => {
+          console.log(`📡 Forwarding stream from ${originalPeerId} to rebroadcast peer ${peerId}`);
+          rebroadcastRoom.addStream(stream, peerId);
+        });
+      });
+
+      rebroadcastRoom.onPeerLeave(peerId => {
+        console.log('🔄 Rebroadcast peer left:', peerId);
+        setState(prev => ({
+          ...prev,
+          rebroadcastPeers: prev.rebroadcastPeers.filter(id => id !== peerId)
+        }));
+      });
+
+      setState(prev => ({
+        ...prev,
+        rebroadcastRoom,
+        isRebroadcasting: true
+      }));
+
+      return { roomName: rebroadcastRoomName, room: rebroadcastRoom };
+    } catch (error) {
+      console.error('❌ Failed to start rebroadcast:', error);
+      return null;
+    }
+  };
+
+  const stopRebroadcast = () => {
+    if (rebroadcastRoomRef.current) {
+      console.log('🛑 Stopping rebroadcast');
+      rebroadcastRoomRef.current.leave();
+      rebroadcastRoomRef.current = null;
+    }
+    
+    setState(prev => ({
+      ...prev,
+      rebroadcastRoom: null,
+      rebroadcastPeers: [],
+      isRebroadcasting: false
+    }));
   };
 
   // Auto-join room if roomName is provided
@@ -193,6 +285,8 @@ export function useWebRTC(roomName?: string) {
     leaveRoom,
     shareStream,
     onPeerStream,
+    startRebroadcast,
+    stopRebroadcast,
     getDebugInfo
   };
 }

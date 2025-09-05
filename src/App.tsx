@@ -5,6 +5,7 @@ import { RoomStatus } from "./components/RoomStatus";
 import { WebcamVideo } from "./components/WebcamVideo";
 import { RoomInput } from "./components/RoomInput";
 import { PeerStreams } from "./components/PeerStreams";
+import { RebroadcastButton } from "./components/RebroadcastButton";
 import { DebugPanel } from "./components/DebugPanel";
 import { useWebRTC } from "./hooks/useWebRTC";
 import "./index.css";
@@ -21,6 +22,7 @@ export function App() {
   const [currentRoom, setCurrentRoom] = useState<string>();
   const [isLoading, setIsLoading] = useState(false);
   const [peerStreams, setPeerStreams] = useState<PeerStream[]>([]);
+  const [rebroadcastRoomName, setRebroadcastRoomName] = useState<string>();
 
   const webrtc = useWebRTC();
 
@@ -104,11 +106,33 @@ export function App() {
     );
   }, [webrtc.peers]);
 
+  const handleRebroadcast = () => {
+    if (webrtc.isRebroadcasting) {
+      // Stop rebroadcasting
+      webrtc.stopRebroadcast();
+      setRebroadcastRoomName(undefined);
+    } else {
+      // Start rebroadcasting
+      const result = webrtc.startRebroadcast();
+      if (result) {
+        setRebroadcastRoomName(result.roomName);
+        console.log('🎉 Started rebroadcast in room:', result.roomName);
+      }
+    }
+  };
+
   // Debug data from real Trystero state
   const debugData = {
     availableRooms: currentRoom ? [currentRoom] : [],
+    rebroadcastHierarchy: {
+      originalRoom: currentRoom,
+      rebroadcastRoom: rebroadcastRoomName,
+      isRebroadcasting: webrtc.isRebroadcasting,
+      rebroadcastPeers: webrtc.rebroadcastPeers.length,
+      incomingStreams: peerStreams.length
+    },
     originalEventId: isLive ? `event-${Date.now()}` : undefined,
-    availableRestreams: [],
+    availableRestreams: webrtc.isRebroadcasting ? [rebroadcastRoomName] : [],
     webrtcState: webrtc.getDebugInfo(),
     nostrRelayStatus: {
       connected: webrtc.isConnected,
@@ -116,7 +140,10 @@ export function App() {
       roomExists: !!webrtc.room,
       roomError: webrtc.error
     },
-    peerConnections: webrtc.peers.map(peerId => ({ peerId, status: 'connected', fullId: peerId }))
+    peerConnections: [
+      ...webrtc.peers.map(peerId => ({ peerId, status: 'viewer', fullId: peerId })),
+      ...webrtc.rebroadcastPeers.map(peerId => ({ peerId, status: 'rebroadcast-viewer', fullId: peerId }))
+    ]
   };
 
   return (
@@ -144,6 +171,26 @@ export function App() {
       <WebcamVideo stream={webcamStream} />
       
       <PeerStreams peerStreams={peerStreams} />
+      
+      <RebroadcastButton
+        onRebroadcast={handleRebroadcast}
+        isRebroadcasting={webrtc.isRebroadcasting}
+        hasIncomingStreams={peerStreams.length > 0}
+        disabled={isLoading}
+      />
+      
+      {rebroadcastRoomName && (
+        <div style={{
+          margin: '1rem 0',
+          padding: '0.5rem',
+          background: '#fff',
+          border: '2px inset #c0c0c0',
+          fontFamily: 'Times New Roman, Times, serif'
+        }}>
+          <strong>Rebroadcast Room:</strong> {rebroadcastRoomName}<br />
+          <strong>Rebroadcast Viewers:</strong> {webrtc.rebroadcastPeers.length}
+        </div>
+      )}
       
       <DebugPanel data={debugData} />
     </div>
