@@ -20,14 +20,17 @@
     "nostr-tools": "^2.16.2",
     "react": "^19",
     "react-dom": "^19",
+    "snstr": "^0.1.2",
     "tailwind-merge": "^3.3.1",
     "tailwindcss": "^4.1.11",
     "tailwindcss-animate": "^1.0.7",
-    "trystero": "./trystero-local"
+    "trystero": "./trystero-local",
+    "wouter": "^3.7.1"
   },
   "devDependencies": {
+    "@types/bun": "latest",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@types/bun": "latest"
+    "typescript": "^5.9.2"
   }
 }
