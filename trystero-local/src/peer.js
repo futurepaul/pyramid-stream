@@ -69,8 +69,21 @@ export default (initiator, {rtcConfig, rtcPolyfill, turnConfig}) => {
   }
 
   pc.onconnectionstatechange = () => {
+    console.log('🔗 TRYSTERO: Connection state changed to:', pc.connectionState);
     if (['disconnected', 'failed', 'closed'].includes(pc.connectionState)) {
+      console.log('❌ TRYSTERO: Connection failed/closed, state:', pc.connectionState);
       handlers.close?.()
+    }
+  }
+
+  pc.onicegatheringstatechange = () => {
+    console.log('🧊 TRYSTERO: ICE gathering state:', pc.iceGatheringState);
+  }
+
+  pc.oniceconnectionstatechange = () => {
+    console.log('🧊 TRYSTERO: ICE connection state:', pc.iceConnectionState);
+    if (pc.iceConnectionState === 'failed') {
+      console.log('❌ TRYSTERO: ICE connection failed - this might be the issue');
     }
   }
 
